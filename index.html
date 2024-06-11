@@ -20,16 +20,18 @@
 
 <body>
 
-     <audio id="bgMusic" autoplay loop>
+    <audio id="bgMusic" autoplay loop>
         <source src="audio.mp3" type="audio/mpeg">
         <!-- Añade aquí más formatos de audio si lo deseas para mejorar la compatibilidad -->
-       
+
     </audio>
-    
+
     <canvas id="lienzo" width="1560" height="750"></canvas>
     <img id="carrito" src="carrito2.jpg.png" alt="carrito" width="100" height="100" style="top: 660px; left: 650px;">
     <img id="persona" src="persona.png" alt="persona" width="90" height="100" style="top: 280px; left: 630px;">
     <img id="persona2" src="persona2.png" alt="persona" width="75" height="100" style="top: 280px; left: 750px;">
+    <img id="meta" src="meta.png" alt="meta" width="200" height="200" style="display: none; top: 300px; left: 640px;">
+
 
     <script>
         var lienzo = document.getElementById("lienzo");
@@ -38,14 +40,18 @@
         var carrito = document.getElementById("carrito");
         var persona = document.getElementById("persona");
         var persona2 = document.getElementById("persona2");
+        var meta = document.getElementById("meta");
         var carritoX = parseInt(carrito.style.left); // Posición horizontal del carrito
         var personaX = parseInt(persona.style.left); // Posición horizontal de la persona
         var personaY = parseInt(persona.style.top); // Posición vertical de la persona
         var persona2Y = parseInt(persona2.style.top); // Posición vertical de la segunda persona
+        var metaX = parseInt(meta.style.left); // Posición horizontal de la meta
+        var metaY = parseInt(meta.style.top); // Posición vertical de la meta
         var movimiento = 10; // Velocidad inicial en píxeles
         var gameOver = false;
         var intervaloPersona;
         var intervaloPersona2;
+        var intervaloMeta;
         var retrasoPersona = false; // Variable para controlar el retraso de la persona
 
         var cactus = [
@@ -164,14 +170,14 @@
                 intervaloPersona2 = null;
 
                 // Reiniciar movimiento de la persona con el mismo retraso que la segunda persona
-                setTimeout(function() {
+                setTimeout(function () {
                     retrasoPersona = false;
                 }, 500); // Tiempo de espera antes de reiniciar el movimiento de la persona (mismo que para persona2)
             }
 
             // Reiniciar movimiento de la persona si se debe aplicar un retraso
             if (retrasoPersona) {
-                setTimeout(function() {
+                setTimeout(function () {
                     iniciarMovimiento();
                 }, 500); // Tiempo de espera antes de reiniciar el movimiento de la persona (mismo que para persona2)
             }
@@ -212,6 +218,41 @@
                 }
             }
         });
+
+        setTimeout(function () {
+            mostrarMeta();
+        }, 60000); // Mostrar la meta después de 1 minuto
+
+        function mostrarMeta() {
+            meta.style.display = "block"; // Mostrar la imagen de la meta
+            intervaloMeta = setInterval(moverMetaHaciaCarrito, 100); // Iniciar movimiento de la meta
+        }
+
+        function moverMetaHaciaCarrito() {
+            if (metaY < personaY) {
+                metaY += movimiento; // Ajustar la velocidad de la meta
+                meta.style.top = metaY + "px"; // Actualizar posición vertical de la meta
+            } else {
+                clearInterval(intervaloMeta); // Detener movimiento de la meta cuando llega al nivel de la persona
+                verificarColision(); // Verificar colisión con el carrito
+            }
+        }
+
+        function verificarColision() {
+            var carritoRect = carrito.getBoundingClientRect();
+            var metaRect = meta.getBoundingClientRect();
+
+            if (!(carritoRect.right < metaRect.left ||
+                    carritoRect.left > metaRect.right ||
+                    carritoRect.bottom < metaRect.top ||
+                    carritoRect.top > metaRect.bottom)) {
+                alert("¡Ganaste!"); // Mostrar mensaje de ganar
+                clearInterval(intervaloPersona); // Detener el movimiento de la persona
+                gameOver = true; // Establecer el estado de juego como terminado
+            }
+        }
+
+        setInterval(verificarColision, 100); // Verificar colisión cada 0.1 segundo
     </script>
 </body>
 
