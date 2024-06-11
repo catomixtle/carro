@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>JUEGO CARRITO</title>
+    <meta name="description" content="Una guía interactiva de primeros pasos para Brackets.">
+    <style>
+        canvas {
+            border: 1px solid blue;
+        }
+
+        img {
+            position: absolute;
+            /* Ajusta la posición vertical y horizontal según necesites */
+        }
+    </style>
+</head>
+
+<body>
+
+     <audio id="bgMusic" autoplay loop>
+        <source src="audio.mp3" type="audio/mpeg">
+        <!-- Añade aquí más formatos de audio si lo deseas para mejorar la compatibilidad -->
+       
+    </audio>
+    
+    <canvas id="lienzo" width="1560" height="750"></canvas>
+    <img id="carrito" src="carrito2.jpg.png" alt="carrito" width="100" height="100" style="top: 660px; left: 650px;">
+    <img id="persona" src="persona.png" alt="persona" width="90" height="100" style="top: 280px; left: 630px;">
+    <img id="persona2" src="persona2.png" alt="persona" width="75" height="100" style="top: 280px; left: 750px;">
+
+    <script>
+        var lienzo = document.getElementById("lienzo");
+        var dibujo = lienzo.getContext("2d");
+
+        var carrito = document.getElementById("carrito");
+        var persona = document.getElementById("persona");
+        var persona2 = document.getElementById("persona2");
+        var carritoX = parseInt(carrito.style.left); // Posición horizontal del carrito
+        var personaX = parseInt(persona.style.left); // Posición horizontal de la persona
+        var personaY = parseInt(persona.style.top); // Posición vertical de la persona
+        var persona2Y = parseInt(persona2.style.top); // Posición vertical de la segunda persona
+        var movimiento = 10; // Velocidad inicial en píxeles
+        var gameOver = false;
+        var intervaloPersona;
+        var intervaloPersona2;
+        var retrasoPersona = false; // Variable para controlar el retraso de la persona
+
+        var cactus = [
+            { x: 800, y: 400, width: 170, height: 100 },
+            // Agrega más objetos aquí si deseas más cactus
+        ];
+
+        // Dibujar cada cactus
+        for (var i = 0; i < cactus.length; i++) {
+            var cact = cactus[i];
+            var img = new Image();
+            img.onload = function () {
+                dibujo.drawImage(img, cact.x, cact.y, cact.width, cact.height);
+            };
+            img.src = 'cactus.png'; // Ruta de la imagen del cactus
+        }
+
+        // Crear un degradado dentro del lienzo
+        var gr = dibujo.createLinearGradient(0, 0, 0, lienzo.height);
+        gr.addColorStop(0, "#FF7D29"); // Color azul fuerte
+        gr.addColorStop(1, "#C40C0C"); // Color azul más claro
+        dibujo.fillStyle = gr;
+        dibujo.fillRect(0, 0, lienzo.width, lienzo.height); // Llenar el lienzo con el degradado
+
+        dibujo.beginPath();
+        dibujo.moveTo(400, 600); // Comienza en la esquina inferior izquierda
+        dibujo.lineTo(700, 300); // Línea diagonal hasta el centro
+        dibujo.lineTo(1000, 600); // Línea diagonal hasta la esquina inferior derecha
+        dibujo.closePath();
+        dibujo.fill();
+
+        var gr = dibujo.createLinearGradient(0, 350, 0, 600); // Ajusta el segundo y primer valor (150 y 700 respectivamente)
+        gr.addColorStop(0, "#FF6500");
+        gr.addColorStop(1, "#FFBF78");
+        dibujo.fillStyle = gr;
+        dibujo.fillRect(0, 260, 1560, 750); // Ajusta el segundo valor (400)
+
+        dibujo.fillStyle = "#808080"; // Color gris
+        dibujo.fillRect(650, 259, 165, 800); // Carretera gris entre x=450 y x=550
+
+        var gradiente = dibujo.createRadialGradient(400, 100, 50, 400, 100, 100);
+        gradiente.addColorStop(0, "rgba(255, 250, 0, 0)"); // Amarillo opaco (255, 255, 0, 0)
+        gradiente.addColorStop(1, "rgba(255, 250, 0, 1)"); // Amarillo sólido (255, 255, 0, 1)
+        dibujo.fillStyle = gradiente;
+        dibujo.beginPath();
+        dibujo.arc(400, 100, 100, 0, Math.PI * 2, true);
+        dibujo.closePath();
+        dibujo.fill();
+
+        dibujo.fillStyle = "#FFC100";
+        dibujo.beginPath();
+        dibujo.arc(400, 100, 54, 50, Math.PI * 2, true);
+        dibujo.closePath();
+        dibujo.fill();
+
+        // Agregar líneas negras dentro del área gris
+        dibujo.fillStyle = "#000000"; // Color negro
+        dibujo.fillRect(720, 280, 10, 50); // Línea negra vertical a la derecha
+
+        // Agregar tres líneas más
+        for (var i = 0; i < 4; i++) {
+            dibujo.fillRect(720, 340 + i * 80, 10, 50); // Línea negra vertical a la derecha
+        }
+
+        // Definir las coordenadas y tamaños de los círculos para simular nubes
+        var clouds = [
+            { x: 300, y: 50, radius: 30 },
+            { x: 470, y: 80, radius: 40 },
+            // Agrega más objetos aquí si deseas más nubes
+        ];
+
+        // Dibujar cada círculo para simular nubes
+        for (var i = 0; i < clouds.length; i++) {
+            var cloud = clouds[i];
+            dibujo.fillStyle = "rgba(255, 255, 255, 0.8)"; // Color blanco semi-transparente
+            dibujo.beginPath();
+            dibujo.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2, true);
+            dibujo.closePath();
+            dibujo.fill();
+        }
+
+        function moverPersonaYTanque() {
+            // Mover la persona hacia abajo
+            personaY += movimiento; // Ajustar la velocidad
+            persona.style.top = personaY + "px";
+
+            // Verificar si la persona llega al borde inferior
+            if (personaY >= lienzo.height) {
+                // Si la persona llega al borde inferior, reiniciar su posición
+                personaY = 280; // Posición inicial de la persona
+                persona.style.top = personaY + "px";
+
+                // Aplicar retraso para la persona antes de reiniciar su movimiento
+                retrasoPersona = true;
+            }
+
+            // Mover la segunda persona hacia abajo después de un cierto tiempo
+            if (!intervaloPersona2 && personaY >= lienzo.height * 0.75) {
+                intervaloPersona2 = setInterval(moverSegundaPersonaY, 500); // Iniciar el movimiento de la segunda persona
+            }
+        }
+
+        function moverSegundaPersonaY() {
+            // Mover la segunda persona hacia abajo
+            persona2Y += movimiento; // Ajustar la velocidad
+            persona2.style.top = persona2Y + "px";
+
+            // Verificar si la segunda persona llega al borde inferior
+            if (persona2Y >= lienzo.height) {
+                // Si la segunda persona llega al borde inferior, reiniciar su posición
+                persona2Y = 280; // Posición inicial de la segunda persona
+                persona2.style.top = persona2Y + "px";
+
+                // Detener el intervalo una vez que se haya completado el movimiento
+                clearInterval(intervaloPersona2);
+                intervaloPersona2 = null;
+
+                // Reiniciar movimiento de la persona con el mismo retraso que la segunda persona
+                setTimeout(function() {
+                    retrasoPersona = false;
+                }, 500); // Tiempo de espera antes de reiniciar el movimiento de la persona (mismo que para persona2)
+            }
+
+            // Reiniciar movimiento de la persona si se debe aplicar un retraso
+            if (retrasoPersona) {
+                setTimeout(function() {
+                    iniciarMovimiento();
+                }, 500); // Tiempo de espera antes de reiniciar el movimiento de la persona (mismo que para persona2)
+            }
+        }
+
+        function reiniciarPosiciones() {
+            // Restablecer posiciones iniciales de la persona y la segunda persona
+            personaY = 280;
+            persona.style.top = personaY + "px";
+            persona2Y = 280;
+            persona2.style.top = persona2Y + "px";
+        }
+
+        function iniciarMovimiento() {
+            if (!retrasoPersona) {
+                intervaloPersona = setInterval(moverPersonaYTanque, 500); // Iniciar el movimiento de la persona
+            }
+        }
+        iniciarMovimiento();
+
+        document.addEventListener("keydown", function (event) {
+            if (!gameOver) { // Si el juego no ha terminado
+                // Flecha izquierda
+                if (event.keyCode === 39) {
+                    carritoX -= 10; // Ajustar la velocidad del carrito
+                    if (carritoX < 650) {
+                        carritoX = 725;
+                    }
+                    carrito.style.left = carritoX + "px"; // Actualizar posición horizontal del carrito
+                }
+                // Flecha derecha
+                else if (event.keyCode === 37) {
+                    carritoX += 10; // Ajustar la velocidad del carrito
+                    if (carritoX + carrito.width > 750) {
+                        carritoX = 750 - carrito.width;
+                    }
+                    carrito.style.left = carritoX + "px"; // Actualizar posición horizontal del carrito
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
